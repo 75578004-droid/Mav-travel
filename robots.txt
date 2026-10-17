@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Las herramientas de mantenimiento no pintan nada en un buscador.
+Disallow: /herramientas/

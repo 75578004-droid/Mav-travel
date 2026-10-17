@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reducir fotos</title>
+<style>
+  :root { --ink: #06525c; --muted: #2f737d; --line: #cfe2df; --soft: #e6eeeb; --tag: #f2c230; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 20px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+         color: var(--ink); background: #f7f9f8; line-height: 1.55; }
+  .wrap { max-width: 760px; margin-inline: auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 8px; }
+  p { margin: 0 0 14px; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  .zona { border: 2px dashed var(--line); border-radius: 14px; background: #fff;
+          padding: 40px 24px; text-align: center; margin: 24px 0; transition: border-color .2s, background .2s; }
+  .zona.encima { border-color: var(--ink); background: var(--soft); }
+  .zona input { display: none; }
+  .btn { display: inline-block; background: var(--ink); color: #f7f9f8; border: 0; border-radius: 8px;
+         padding: 12px 22px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:hover { filter: brightness(1.12); }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: .9rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ok { background: #e9f7f5; border: 1px solid var(--ink); border-radius: 10px; padding: 16px; margin-top: 22px; }
+  code { background: var(--soft); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-size: .9em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Reducir fotos</h1>
+  <p class="muted">
+    Las fotos del sitio son de 1400 px de ancho, pero en una tarjeta de tour se ven
+    a unos 350. Esta página crea dos versiones reducidas de cada foto, de 400 y de
+    800 px, para que el navegador baje la que le convenga. La de 800 es la que
+    acaba sirviendo a la mayoría de los móviles, que piden el doble de píxeles
+    de los que ocupa el hueco.
+  </p>
+  <p class="muted">
+    No sube nada a ningún sitio: todo se hace aquí, en tu navegador.
+  </p>
+
+  <div class="zona" id="zona">
+    <p><b>Arrastra aquí las fotos</b> o elígelas desde tu equipo.</p>
+    <label class="btn" for="archivos">Elegir fotos</label>
+    <input type="file" id="archivos" accept="image/*" multiple>
+  </div>
+
+  <div id="resultado"></div>
+</div>
+
+<script>
+const ANCHOS = [400, 800];
+const CALIDAD = { 400: 0.82, 800: 0.80 };
+
+const zona = document.getElementById('zona');
+const entrada = document.getElementById('archivos');
+const salida = document.getElementById('resultado');
+
+const kb = n => Math.round(n / 1024) + ' KB';
+
+['dragenter', 'dragover'].forEach(ev =>
+  zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.add('encima'); }));
+['dragleave', 'drop'].forEach(ev =>
+  zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.remove('encima'); }));
+
+zona.addEventListener('drop', e => procesar([...e.dataTransfer.files]));
+entrada.addEventListener('change', () => procesar([...entrada.files]));
+
+async function reducir(archivo) {
+  const url = URL.createObjectURL(archivo);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+
+    const versiones = [];
+    for (const ancho of ANCHOS) {
+      const k = Math.min(1, ancho / img.naturalWidth);
+      const lienzo = document.createElement('canvas');
+      lienzo.width = Math.round(img.naturalWidth * k);
+      lienzo.height = Math.round(img.naturalHeight * k);
+
+      const ctx = lienzo.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, lienzo.width, lienzo.height);
+
+      const blob = await new Promise(r => lienzo.toBlob(r, 'image/jpeg', CALIDAD[ancho]));
+      versiones.push({ ancho, blob, w: lienzo.width, h: lienzo.height });
+    }
+    return { versiones, anchoOriginal: img.naturalWidth };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function descargar(blob, nombre) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+async function procesar(archivos) {
+  const fotos = archivos.filter(f => f.type.startsWith('image/'));
+  if (!fotos.length) return;
+
+  salida.innerHTML = '<p class="muted">Procesando…</p>';
+  const filas = [];
+  const rutas = [];
+
+  for (const archivo of fotos) {
+    const base = archivo.name.replace(/\.[^.]+$/, '');
+    const r = await reducir(archivo);
+
+    for (const v of r.versiones) {
+      const nombre = base + '-' + v.ancho + '.jpg';
+      descargar(v.blob, nombre);
+      await new Promise(res => setTimeout(res, 250));   // sin esto el navegador agrupa las descargas
+
+      filas.push(
+        '<tr><td>' + nombre + '</td><td class="num">' + v.w + '×' + v.h +
+        '</td><td class="num">' + kb(archivo.size) + '</td><td class="num">' + kb(v.blob.size) +
+        '</td><td class="num">' + Math.round((1 - v.blob.size / archivo.size) * 100) + '%</td></tr>'
+      );
+    }
+
+    rutas.push("  'img/" + base + ".jpg',");
+
+    if (r.anchoOriginal !== 1400) {
+      filas.push('<tr><td colspan="5" class="muted">Ojo: ' + archivo.name + ' mide ' +
+        r.anchoOriginal + ' px de ancho. El sitio espera 1400.</td></tr>');
+    }
+  }
+
+  salida.innerHTML =
+    '<table><tr><th>Archivo</th><th class="num">Medidas</th><th class="num">Antes</th>' +
+    '<th class="num">Después</th><th class="num">Ahorro</th></tr>' + filas.join('') + '</table>' +
+    '<div class="ok"><p><b>Ya están descargadas.</b> Muévelas a la carpeta <code>img/</code>, ' +
+    'junto a las fotos grandes.</p><p>Después añade estas rutas a <code>FOTOS_PEQUENAS</code> ' +
+    'en <code>js/data.js</code>:</p><pre><code>' + rutas.join('\n') + '</code></pre></div>';
+}
+</script>
+</body>
+</html>

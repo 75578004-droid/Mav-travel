@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Icono de pestaña: la montaña de la marca sobre la tinta teal.
+       Si cambias los colores en css/styles.css, cámbialos también aquí. -->
+  <rect width="64" height="64" rx="12" fill="#06525c"/>
+  <circle cx="46" cy="18" r="6" fill="#f2c230"/>
+  <g transform="translate(5 17) scale(1.0)">
+    <path d="M0 34 17 8l6 9 7-17 24 34H40L30 16l-7 18z" fill="#ffffff"/>
+  </g>
+</svg>

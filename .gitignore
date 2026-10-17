@@ -1,0 +1,14 @@
+# Archivos que crean Windows, macOS y OneDrive por su cuenta
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Nota: los archivos que genera herramientas/actualizar-meta.js
+# (tour-*.html, robots.txt, sitemap.xml) SÍ se suben: GitHub Pages
+# los sirve tal cual, no hay ningún paso de compilación en el servidor.
