@@ -61,7 +61,7 @@ const EMPRESA = {
 
   // Dirección final del sitio, sin barra al final. Hace falta para que
   // WhatsApp y las redes muestren la vista previa del enlace.
-  dominio: '',                                // p. ej. 'https://mavtravel.com.pe'
+  dominio: 'https://75578004-droid.github.io/Mav-travel',   // al comprar dominio propio, cámbialo aquí y vuelve a correr herramientas/actualizar-meta.js
   // Imagen de la vista previa, 1200x630 px. Ruta dentro del proyecto.
   imagenCompartir: 'img/huaytapallana.jpg',
 

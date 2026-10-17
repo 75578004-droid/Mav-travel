@@ -3,3 +3,5 @@ Allow: /
 
 # Las herramientas de mantenimiento no pintan nada en un buscador.
 Disallow: /herramientas/
+
+Sitemap: https://75578004-droid.github.io/Mav-travel/sitemap.xml
